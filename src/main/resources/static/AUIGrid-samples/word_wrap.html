@@ -34,10 +34,10 @@
 .my-custom-column {
 	text-align: left;
 }
-.my-css-add {
+.my-row-add {
 	background-color: #c2fbc9;
 }
-.my-css-del {
+.my-row-del {
 	background-color: #ffd8d8;
 }
 </style>
@@ -81,11 +81,11 @@ function createAUIGrid(columnLayout) {
 		wordWrap : true, // 워드랩 적용
 		showRowCheckColumn: true, // 엑스트라 행 체크박스 컬럼 표시
 		rowStyleFunction : function(rowIndex, item) { // 행 스타일 함수
-			if (item.action == "add") {
-		    	return "my-css-add";
+			if (item.css_class_nm == "my-row-add") {
+		    	return item.css_class_nm;
 			}
-			else if (item.action == "del") {
-		    	return "my-css-del";
+			else if (item.css_class_nm == "my-row-del") {
+		    	return item.css_class_nm;
 			}
 		    return "";
 		},
@@ -103,20 +103,30 @@ function addRowData() {
 		id : "test" + cnt,
 		msg : "kkc 테스트 입니다." + cnt,
 		date : "2025-02-17",
-		action : "add"
+		css_class_nm : "my-row-add"
 	};
 
 	AUIGrid.addRow(myGridID, items, 0);
-	AUIGrid.addCheckedRowsByValue(myGridID, "action", "add");
+	AUIGrid.addCheckedRowsByValue(myGridID, "css_class_nm", "my-row-add");
 };
 function delRowData() {
 	let checkItem = AUIGrid.getCheckedRowItems(myGridID);
+	if (checkItem.length == 0) {
+		alert("삭제할 데이터를 선택해 주세요.");
+		return;
+	}
+
+	// 삭제할 행의 스타일 지정
 	let checkItemFilter = [];
 	checkItem.forEach(function(data, index) {
-		data.item.action = "del";
-		checkItemFilter.push(data.item);
+		if (data.item.css_class_nm != "my-row-add") {
+			data.item.css_class_nm = "my-row-del";
+			checkItemFilter.push(data.item);
+		}
 	});
-	AUIGrid.refreshRows(myGridID, checkItemFilter, "my-css-del", 1);
+	AUIGrid.refreshRows(myGridID, checkItemFilter, "my-row-del", 1);
+
+	// 체크된 행 삭제
 	AUIGrid.removeCheckedRows(myGridID);
 
 	// 삭제된 데이터를 체크박스로 선택
@@ -126,16 +136,21 @@ function delRowData() {
 };
 function saveRowData() {
 	let state = AUIGrid.getGridDataWithState(myGridID, "state");
+	let stateFilter = [];
 
-	AUIGrid.setAllCheckedRows(myGridID, false); // 체크박스 전체 해제
+	// 체크박스 전체 해제
+	AUIGrid.setAllCheckedRows(myGridID, false);
+
 	// 추가/삭제된 데이터를 체크박스로 선택
 	state.forEach(function(item, index) {
-		if (item.action == "add") {
-			console.log("추가된 데이터 : ", item);
+		if (item.state == "added") {
+		//	console.log("추가된 데이터 : ", item);
 			AUIGrid.addCheckedRowsByValue(myGridID, "_$uid", item._$uid);
+			stateFilter.push(item);
 		} else if (item.state == "removed") {
-			console.log("삭제된 데이터 : ", item);
+		//	console.log("삭제된 데이터 : ", item);
 			AUIGrid.addCheckedRowsByValue(myGridID, "_$uid", item._$uid);
+			stateFilter.push(item);
 		}
 	});
 };
