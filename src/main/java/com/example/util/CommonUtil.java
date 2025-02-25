@@ -111,6 +111,9 @@ public class CommonUtil {
         else if (userAgent.contains("msie 8")) {
             browser = "IE 8";
         }
+        else if (userAgent.contains("kakaotalk/")) {
+            browser = "KAKAOTALK";
+        }
         else if (userAgent.contains("edg/")) {
             browser = "EDGE";
         }
