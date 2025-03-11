@@ -128,12 +128,12 @@
 			// $('.aui-grid-paging-row-count-select').trigger('change');
 
 			// 2 그리드 파괴 후 생성하는 방법
-			// AUIGrid.destroy(myGridID);
-			// createAUIGrid( $(this).val() );
-			// requestData("./data/normal_500.json");
+			AUIGrid.destroy(myGridID);
+			createAUIGrid( $(this).val() );
+			requestData("./data/normal_500.json");
 
 			// 3 제공 메서드 호출하는 방법
-			AUIGrid.setPageRowCount(myGridID, $(this).val());
+			// AUIGrid.setPageRowCount(myGridID, $(this).val());
 	    });
 	});
 </script>

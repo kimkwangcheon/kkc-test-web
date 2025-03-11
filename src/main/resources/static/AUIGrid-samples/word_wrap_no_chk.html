@@ -1,0 +1,277 @@
+<!--
+ * 체크박스 없음 (한번에 하나의 행만 선택 가능)
+ * 추가 버튼 클릭 시 행 추가
+ * 추가된 행 / 기존 행 둘 다 수정 가능
+ * ㄴ 특정 컬럼(Message)만 수정 가능
+ * 삭제 버튼 클릭 시 바로 삭제되게 하기
+ * 행 드래그 앤 드롭 불가능
+ -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="viewport" content="width=800">
+<meta name="og:title" content="HTML5, 자바스크립트 데이터그리드 AUIGrid">
+<meta name="og:url" content="https://www.auisoft.net/">
+<meta name="og:description" content="HTML5, 자바스크립트 데이타그리드(javascript datagrid) AUISoft">
+<title>AUIGrid 데모, HTML5, 자바스크립트 데이터그리드 AUIGrid</title>
+<link href="https://www.auisoft.net/aui.ico" rel="shortcut icon" />
+
+<!-- 데모 구성용 CSS 입니다. 실제 프로젝트에서는 불필요 하니 추가할 필요 없습니다. -->
+<link href="./demo.css" rel="stylesheet">
+
+<!-- ajax 요청을 위한 스크립트입니다. -->
+<!-- jQuery 사용한다면, 해당 2개의 JS는 불필요 합니다.  -->
+<script type="text/javascript" src="./ajax.js"></script>
+<script type="text/javascript" src="./common.js"></script>
+
+<!-- AUIGrid 테마 CSS 파일입니다. 그리드 출력을 위해 꼭 삽입하십시오. -->
+<!-- 원하는 테마가 있다면, 다른 파일로 교체 하십시오. -->
+<link href="../AUIGrid/AUIGrid_style.css" rel="stylesheet">
+
+<!-- AUIGrid 라이센스 파일입니다. 그리드 출력을 위해 꼭 삽입하십시오. -->
+<script type="text/javascript" src="../AUIGrid/AUIGridLicense.js"></script>
+
+<!-- 실제적인 AUIGrid 라이브러리입니다. 그리드 출력을 위해 꼭 삽입하십시오.--> 
+<script type="text/javascript" src="../AUIGrid/AUIGrid.js"></script>
+
+<style type="text/css">
+.my-custom-column {
+	text-align: left;
+}
+.my-row-add {
+	background-color: #c2fbc9;
+}
+.my-row-del {
+	background-color: #ffd8d8;
+}
+</style>
+
+<script type="text/javascript">
+
+// AUIGrid 생성 후 반환 ID
+var myGridID;
+
+// document ready (jQuery 의 $(document).ready(function() {}); 과 같은 역할을 합니다.
+function documentReady() {
+	
+	// AUIGrid 그리드를 생성합니다.
+	createAUIGrid(columnLayout);
+	
+	// 데이터 요청, 요청 성공 시 AUIGrid 에 데이터 삽입합니다.
+	requestData("./data/message_100.json");
+
+ 	// 이벤트 - 특정 컬럼만 수정 가능하게 하기
+ 	// ㄴ 버그 있음 : Message 컬럼이 아닌 다른 컬럼 셀을 더블클릭 후 -> Message 컬럼의 셀에서 F2키 누르면 -> 셀 내용이 다 지워짐
+ 	AUIGrid.bind(myGridID, ["cellDoubleClick", "keyDown"], function( event ) {
+ 		console.log("event");
+        if(event.type == "cellDoubleClick") {
+        	if (event.headerText != "Message") {
+				AUIGrid.setProp(myGridID, "editable" , false );
+				return false;
+			}
+			else {
+				AUIGrid.setProp(myGridID, "editable" , true );
+				return true;
+			}
+        }
+        else if(event.type == "keyDown") {
+        	if(event.keyCode == 113) {
+        		let selectedItems = AUIGrid.getSelectedItems(event.pid);
+				if (selectedItems[0].headerText != "Message") {
+					AUIGrid.setProp(myGridID, "editable" , false );
+					return false;
+				}
+				else {
+					AUIGrid.setProp(myGridID, "editable" , true );
+					return true;
+				}
+			}
+			console.log("apt apt apt");
+		}
+
+		console.log("test test test");
+ 	});
+
+ 	// 이벤트 테스트
+ 	AUIGrid.bind(myGridID, ["cellEditBegin", "cellEditEnd", "cellEditCancel"], auiCellEditingHandler);
+
+	/*
+ 	// 셀 선택변경 이벤트 바인딩 (keepEditing=true 이면 탭키 제어 안됨)
+	AUIGrid.bind(myGridID, "selectionChange", function(event) {
+		// 선택 대표 셀 정보
+		var primeCell = event.primeCell;
+		if (primeCell.headerText == "Message") {
+			AUIGrid.setProp(myGridID, "keepEditing" , true );
+		}
+<!--		console.log("현재 셀 : ( " + primeCell.rowIndex + ", " + primeCell.headerText + " ), 값 : " + primeCell.value);-->
+	});
+	*/
+};
+function auiCellEditingHandler(event) {
+	if (event.type == "cellEditBegin") {
+		console.log("에디팅 시작(cellEditBegin) : ( " + event.rowIndex + ", " + event.columnIndex + " ) " + event.headerText + ", value : " + event.value + ", which : " + event.which);
+	} else if (event.type == "cellEditEnd") {
+		console.log("에디팅 종료(cellEditEnd) : ( " + event.rowIndex + ", " + event.columnIndex + " ) " + event.headerText + ", value : " + event.value + ", which : " + event.which);
+		if (event.which == 13)
+			AUIGrid.setProp(myGridID, "keepEditing" , true );
+		else
+			AUIGrid.setProp(myGridID, "keepEditing" , false );
+	} else {
+		console.log("에디팅 취소(cellEditCancel) : ( " + event.rowIndex + ", " + event.columnIndex + " ) " + event.headerText + ", value : " + event.value + ", which : " + event.which);
+		if (event.which == 13)
+			AUIGrid.setProp(myGridID, "keepEditing" , true );
+		else
+			AUIGrid.setProp(myGridID, "keepEditing" , false );
+	}
+};
+
+// AUIGrid 칼럼 설정
+var columnLayout = [ {
+		dataField : "id",
+		headerText : "ID",
+		width:140
+	}, {
+		dataField : "msg",
+		headerText : "Message",
+		style : "my-custom-column",
+		width : 500
+	}, {
+		dataField : "date",
+		headerText : "Date",
+		width: 160
+	}
+];
+
+// AUIGrid 를 생성합니다.
+function createAUIGrid(columnLayout) {
+	var gridProps = {
+		editable : true, // 수정 가능 여부
+		rowStyleFunction : function(rowIndex, item) { // 행 스타일 함수 (색깔 표시)
+			if (item.css_class_nm == "my-row-add") {
+		    	return item.css_class_nm;
+			}
+			else if (item.css_class_nm == "my-row-del") {
+		    	return item.css_class_nm;
+			}
+		    return "";
+		}
+<!--		 "singleCell" : 선택 단위가 셀(cell) 단위로 지정되며 단일 셀을 선택할 수 있습니다.-->
+<!--		 "singleRow" : 선택 단위가 행(row) 단위로 지정되며 단일 행을 선택할 수 있습니다.-->
+<!--		 "multipleCells" : 선택 단위가 셀(cell) 단위로 지정되며 다수의 셀을 선택할 수 있습니다.-->
+<!--		 "multipleRows : 선택 단위가 행(row) 단위로 지정되며 다수의 행을 선택할 수 있습니다.-->
+<!--		 "none" : 그리드에서 제공하는 선택 기능을 해제 시킵니다. "none"을 설정하면 일반 HTML 에서 기본 제공하는 사용자 텍스트 선택을 하게 만듭니다.-->
+		, selectionMode : "singleRow"
+		, keepEditing : false // 탭&엔터키로 수정을 완료 한다면 다음 셀을 수정 가능 상태로 만들지 여부
+	};
+	
+	// 실제로 #grid_wrap 에 그리드 생성
+	myGridID = AUIGrid.create("#grid_wrap", columnLayout, gridProps);
+};
+
+// 추가
+var cnt = 0;
+function addRowData() {
+	cnt++;
+	var items = {
+		id : "test" + cnt,
+		msg : "kkc 테스트 입니다." + cnt,
+		date : "2025-02-17",
+		css_class_nm : "my-row-add"
+	};
+
+	AUIGrid.addRow(myGridID, items, 0);	// 첫번째 행에 추가
+	AUIGrid.clearSelection(myGridID);	// 현재 선택된 행(들) 해제
+};
+
+// 삭제 : confirm창 띄우고, 1건씩 바로 저장되게 하기
+function delRowData() {
+	let isConfirm = confirm("선택한 데이터를 삭제하시겠습니까?");
+	if (isConfirm) {
+		let selectedRows = AUIGrid.getSelectedRows(myGridID);
+
+		if (selectedRows.length == 0) {
+			alert("삭제할 데이터를 선택해 주세요.");
+			return;
+		}
+
+		// 체크된 행 삭제
+		selectedRows[0].css_class_nm = "my-row-del"; 		// css 적용 (빨간색 배경)
+		AUIGrid.updateRowsById(myGridID, selectedRows[0]); 	// 선택된 row 1개 업데이트
+		AUIGrid.removeRow(myGridID, "selectedIndex"); 		// 현재 선택된 행(들) 삭제
+		AUIGrid.clearSelection(myGridID);					// 현재 선택된 행(들) 해제
+<!--		AUIGrid.refreshRows(myGridID, selectedRows, "my-flash-style", 1000);-->
+
+		// 서버에 보낼 데이터
+		console.log("삭제할 데이터들(배열) : ", AUIGrid.getRemovedItems(myGridID));
+	}
+};
+
+// 저장
+function saveRowData() {
+	// 추가된 데이터 가져오기
+	let addedRowItems = AUIGrid.getAddedRowItems(myGridID);
+	if (addedRowItems.length > 0) {
+		addedRowItems.forEach(function(data, index) {
+			data.state = "added"; // 추가된 데이터임을 표시
+		});
+	}
+
+	// 수정된 데이터 가져오기
+	let editedRowItems = AUIGrid.getEditedRowItems(myGridID);
+	if (editedRowItems.length > 0) {
+		editedRowItems.forEach(function(data, index) {
+			data.state = "edited"; // 수정된 데이터임을 표시
+		});
+	}
+
+	// 삭제된 데이터 가져오기
+	let removedRowItems = AUIGrid.getRemovedItems(myGridID);
+	if (removedRowItems.length > 0) {
+		removedRowItems.forEach(function(data, index) {
+			data.state = "removed"; // 삭제된 데이터임을 표시
+		});
+	}
+
+	// 서버에 보낼 데이터 (추가 + 수정된 데이터)
+	console.log("저장할 데이터들(배열) add : ", addedRowItems);
+	console.log("저장할 데이터들(배열) edit : ", editedRowItems);
+	console.log("저장할 데이터들(배열) add + edit + del : ", addedRowItems.concat(editedRowItems, removedRowItems));
+};
+</script>
+
+</head>
+<body>
+
+<div id="main">
+	<div class="desc">
+		<p>출력할 텍스트가 긴 경우 word-wrap 형식으로 출력시킵니다. ( wordWrap = true 설정)</p>
+		<p>자동 개행이 발생하며, 개별 자동 행 높이로 출력됩니다.</p>
+		<p>BR 태그로 원하는 곳에서 개행을 하여 출력을 원한다면 TemplateRenderer 사용으로 가능합니다. 다음 데모를 참고하십시오.</p>
+		<p><a href="./word_wrap_template.html">BR 태그 사용하여 수동 개행 및 자동 행 높이 데모 보기</a></p>
+	</div>
+	<div>
+		<div id="btnArea">
+			<button onclick="addRowData();" style="width:60px;height:30px;">추가</button>
+			<button onclick="delRowData();" style="width:60px;height:30px;">삭제</button>
+			<button onclick="saveRowData();" style="width:60px;height:30px;">저장</button>
+		</div>
+		<!-- 에이유아이 그리드가 이곳에 생성됩니다. -->
+		<div id="grid_wrap" style="width:1200px; height:480px; margin:0 auto;"></div>
+	</div>
+	
+	<div class="desc_bottom">
+		<p id="ellapse"></p>
+	</div>
+</div>
+<div id="footer">
+     <div class="copyright">
+        <p>Copyright © 2022 AUISoft </p>
+    </div>
+</div>
+
+</body>
+</html>
